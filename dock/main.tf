@@ -12,8 +12,8 @@ def validateParameters() {
     exit 1
   }
   
-  if (!params.ligand) {
-    log.error 'Missing input: ligand'
+  if (!params.ligands) {
+    log.error 'Missing input: ligands'
     exit 1
   }
 
@@ -50,6 +50,9 @@ def validateParameters() {
 }
 
 process vina {
+    input:
+    path ligands
+
     output:
     path "*"
 
@@ -59,8 +62,8 @@ process vina {
     script:
     """
     vina --receptor ${params.receptor} \
-         --ligand ${params.ligand} \
-         --out docked.pdbqt \
+         --ligand ${ligands} \
+         --out ${ligands.baseName}-docked.pdbqt \
          --num_modes ${params.num_modes} \
          --exhaustiveness ${params.exhaustiveness} \
          --center_x ${params.center_x} \
@@ -81,6 +84,7 @@ workflow {
 
   validateParameters()
 
-  vina()
+  ligand_ch = channel.fromPath(params.ligands)
+  vina(ligand_ch)
 }
 
