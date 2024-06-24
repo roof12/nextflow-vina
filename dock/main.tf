@@ -71,7 +71,7 @@ process vina {
          --center_z ${params.center_z} \
          --size_x ${params.size_x} \
          --size_y ${params.size_y} \
-         --size_z ${params.size_z}
+         --size_z ${params.size_z} > ${ligands.baseName}-out.txt
     """
 }
 
