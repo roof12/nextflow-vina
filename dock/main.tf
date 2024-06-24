@@ -50,17 +50,17 @@ def validateParameters() {
 }
 
 process vina {
-    // Define the output directory
     output:
-    file "results/*"
+    path "*"
+
+    publishDir "results"
 
     // Command to run AutoDock Vina
     script:
     """
-    mkdir -p results
     vina --receptor ${params.receptor} \
          --ligand ${params.ligand} \
-         --out results/docked.pdbqt \
+         --out docked.pdbqt \
          --num_modes ${params.num_modes} \
          --exhaustiveness ${params.exhaustiveness} \
          --center_x ${params.center_x} \

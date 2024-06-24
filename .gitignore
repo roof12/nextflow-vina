@@ -2,3 +2,4 @@ work
 params.yml
 .nextflow
 .nextflow.log*
+results
