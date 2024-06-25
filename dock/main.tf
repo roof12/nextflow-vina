@@ -67,6 +67,7 @@ process vina {
   vina --receptor ${params.receptor} \
        --ligand ${ligands} \
        --out ${ligands.baseName}-docked.pdbqt \
+       --cpu ${params.cpu} \
        --num_modes ${params.num_modes} \
        --exhaustiveness ${params.exhaustiveness} \
        --center_x ${params.center_x} \
