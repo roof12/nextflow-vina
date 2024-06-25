@@ -1,5 +1,3 @@
-// main.nf
-
 def helpMessage() {
   log.info """
   vina pipeline
@@ -54,7 +52,8 @@ process vina {
     path ligands
 
     output:
-    path "*"
+    path "*-out.txt", emit: outputs
+    path "*-docked.pdbqt", emit: dockings
 
     publishDir "results"
 
@@ -75,16 +74,43 @@ process vina {
     """
 }
 
-// Define workflow input
+process extractScores {
+  input:
+  path outputs
+
+  output:
+  stdout
+
+  script:
+  """
+#!/usr/bin/env python3
+
+def getLigandAndValues(filename):
+    ligand = None
+    with open(filename, "r") as file:
+        for line in file:
+            if line.startswith("Ligand: "):
+                ligand = line.strip().split()[1]
+            elif line.startswith("   1 "):
+                return [ligand] + line.split()
+
+
+values = getLigandAndValues("${outputs}")
+print(",".join(values))
+  """
+}
+
 workflow {
   if (params.help) {
     helpMessage()
     exit 0
   }
 
+  receptorName = Path.of(params.receptor).baseName
   validateParameters()
 
   ligand_ch = channel.fromPath(params.ligands)
   vina(ligand_ch)
+  extractScores(vina.out.outputs) | collectFile(name: "${receptorName}-scores.csv", storeDir: "results")
 }
 
