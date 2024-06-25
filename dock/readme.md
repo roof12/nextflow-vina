@@ -8,3 +8,5 @@ Usage:
 
 `nextflow run main.tf -params-file params.yml`
 
+Results are symlinked into the directory `results`.
+
