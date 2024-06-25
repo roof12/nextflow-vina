@@ -9,8 +9,8 @@ def helpMessage() {
 }
 
 def validateParameters() {
-  if (!params.ligand) {
-    log.error 'Missing input: ligand'
+  if (!params.ligands) {
+    log.error 'Missing input: ligands'
     exit 1
   }
 }
@@ -68,14 +68,16 @@ workflow {
 
   validateParameters()
 
+  ligandCh = channel.fromPath(params.ligands)
+
   // This can be used on pdb inputs.
   // However, I get errors unless I start with mol files
   // ERROR: Explicit valence for atom # 0 N, 4, is greater than permitted
   //
-  // convertToMol(params.ligand)
+  // convertToMol(ligandCh)
   // addHydrogen(convertToMol.out)
 
-  addHydrogen(params.ligand)
+  addHydrogen(ligandCh)
 
   prepareLigand(addHydrogen.out)
 }
