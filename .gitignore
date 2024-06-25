@@ -3,3 +3,4 @@ params.yml
 .nextflow
 .nextflow.log*
 results
+report.html
