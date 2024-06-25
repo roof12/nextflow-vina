@@ -56,7 +56,7 @@ process prepareLigand() {
 
 script:
   """
-  ~/git/vendor/Meeko/scripts/mk_prepare_ligand.py -i ${ligands}
+  mk_prepare_ligand.py -i ${ligands}
   """
 }
 
