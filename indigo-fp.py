@@ -2,25 +2,18 @@
 
 from indigo import Indigo
 
-def read_sdf_file(indigo, sdf_input):
+def sdf_input_iterator(indigo, sdf_input):
     """
-    Reads an SDF file and extracts all molecules.
+    Returns a molecule iterator from an SDF file.
     
     Parameters:
     sdf_input(str): The path to the SDF file.
     
     Returns:
-    list: A list of Indigo molecules.
+    iterator: An iterator of Indigo molecules.
     """
-    molecules = []
-    
-    try:
-        for molecule in indigo.iterateSDFile(sdf_input):
-            molecules.append(molecule)
-    except Exception as e:
-        print(f"Error reading {sdf_input}: {e}")
-    
-    return molecules
+
+    return indigo.iterateSDFile(sdf_input)
 
 def fingerprint_molecule(molecule):
     """
@@ -39,7 +32,7 @@ def fingerprint_molecule(molecule):
         print(f"Error generating fingerprint: {e}")
         return None
 
-def update_top_similarities(similarity_list, new_similarity, molecule_id, top_count):
+def update_top_similarities(similarity_list, new_similarity, molecule_id, molecule, top_count):
     """
     Update the list of top similarities.
     
@@ -51,31 +44,24 @@ def update_top_similarities(similarity_list, new_similarity, molecule_id, top_co
     Returns:
     list: The updated list of top similarities.
     """
-    similarity_list.append((new_similarity, molecule_id))
+    similarity_list.append((new_similarity, molecule_id, molecule))
     similarity_list.sort(reverse=True, key=lambda x: x[0])
     return similarity_list[:top_count]
 
-def write_similar_molecules_to_sdf(indigo, molecule, molecules, similarity_list, output_sdf):
+def write_similar_molecules_to_sdf(indigo, molecule, similarity_list, output_sdf):
     """
     Write the molecules in the similarity list to an SDF file.
     
     Parameters:
-    molecules (list): List of all molecules.
+    molecule (IndigoObject): 
     similarity_list (list): List of top similarities.
     output_sdf (str): Path to the output SDF file.
     """
     with indigo.writeFile(output_sdf) as sdf_writer:
         sdf_writer.sdfAppend(molecule)
-        for similarity, mol_id in similarity_list:
-            if mol_id < 0 or mol_id >= len(molecules):
-                print(f"Molecule ID {mol_id} is out of range.")
-                continue
-
-            print(f"writing {mol_id} to sdf, similarity: {similarity}")
-            out_mol = molecules[mol_id]
-            sdf_writer.sdfAppend(out_mol)
+        for _, _, similar_molecule in similarity_list:
+            sdf_writer.sdfAppend(similar_molecule)
     print(f"Similar molecules saved to {output_sdf}.")
-    print(similarity_list)
 
 def main(molecule, sdf_input, top_count, sdf_output):
     indigo = Indigo()
@@ -85,23 +71,26 @@ def main(molecule, sdf_input, top_count, sdf_output):
     molecule = indigo.loadMoleculeFromFile(args.molecule)
 
     # read molecules for comparison from sdf
-    molecules = read_sdf_file(indigo, sdf_input)
-    print(f"Found {len(molecules)} molecules in {sdf_input}.")
- 
+    molecules = sdf_input_iterator(indigo, sdf_input)
+
+    i = 0
+    print(f"Reading {sdf_input}:")
     for i, mol in enumerate(molecules):
+        if i % 10000 == 0: print(".", end="", flush=True)
         fingerprint = fingerprint_molecule(mol)
         if fingerprint is not None:
             similarity = indigo.similarity(molecule, mol, "tanimoto")
-            #print(f"Molecule {i} similarity: {similarity}")
-            top_similarities = update_top_similarities(top_similarities, similarity, i, top_count)
+            top_similarities = update_top_similarities(top_similarities, similarity, i, mol, top_count)
+
+    print(f"\nFound {i} molecules.")
 
     # Print the top similarities
     print("Top similarities:")
-    for score, mol_id in top_similarities:
+    for score, mol_id, _ in top_similarities:
         print(f"Molecule {mol_id} Similarity = {score}")
 
     # Write similar molecules to SDF
-    write_similar_molecules_to_sdf(indigo, molecule, molecules, top_similarities, sdf_output)
+    write_similar_molecules_to_sdf(indigo, molecule, top_similarities, sdf_output)
 
 if __name__ == "__main__":
     import argparse
