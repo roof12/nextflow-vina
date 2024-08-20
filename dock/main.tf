@@ -54,6 +54,7 @@ def validateParameters() {
 process vina {
   input:
   path ligands
+  val receptorName
 
   output:
   path "*-out.txt", emit: outputs
@@ -66,7 +67,7 @@ process vina {
   """
   vina --receptor ${params.receptor} \
        --ligand ${ligands} \
-       --out ${ligands.baseName}-docked.pdbqt \
+       --out ${receptorName}-${ligands.baseName}-docked.pdbqt \
        --cpu ${params.cpu} \
        --num_modes ${params.num_modes} \
        --exhaustiveness ${params.exhaustiveness} \
@@ -75,7 +76,7 @@ process vina {
        --center_z ${params.center_z} \
        --size_x ${params.size_x} \
        --size_y ${params.size_y} \
-       --size_z ${params.size_z} > ${ligands.baseName}-out.txt
+       --size_z ${params.size_z} > ${receptorName}-${ligands.baseName}-out.txt
   """
 }
 
@@ -115,7 +116,7 @@ workflow {
   validateParameters()
 
   ligandCh = channel.fromPath(params.ligands)
-  vina(ligandCh)
+  vina(ligandCh, receptorName)
   extractScores(vina.out.outputs) | collectFile(name: "${receptorName}-scores.csv", storeDir: "results")
 }
 
